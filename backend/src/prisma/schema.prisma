@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  user
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique @db.VarChar(50)
+  password    String    @db.VarChar(255)
+  role        Role      @default(user)
+  usageCount  Int       @default(0)
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  images      Image[]
+}
+
+model Image {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  filename      String   @db.VarChar(255)
+  originalName  String   @db.VarChar(255)
+  url          String   @db.VarChar(500)
+  prompt       String   @db.Text
+  config       Json?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+  shares       Share[]
+
+  @@index([userId])
+}
+
+model Share {
+  id        Int       @id @default(autoincrement())
+  imageId   Int
+  shareCode String    @unique @db.VarChar(50)
+  isActive  Boolean   @default(true)
+  visitCount Int      @default(0)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  image     Image     @relation(fields: [imageId], references: [id])
+
+  @@index([imageId])
+  @@index([shareCode])
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  keyName    String    @db.VarChar(100)
+  encryptedKey String  @db.VarChar(500)
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}

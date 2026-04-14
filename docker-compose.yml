@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aippt}
+      MYSQL_USER: ${MYSQL_USER:-aippt}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aipptpassword}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-builder
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-aippt}:${MYSQL_PASSWORD:-aipptpassword}@mysql:3306/${MYSQL_DATABASE:-aippt}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-at-least-32-chars}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-your-gemini-api-key}
+      PORT: 3001
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-builder
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/http.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  mysql_data:
