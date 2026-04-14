@@ -1,0 +1,5 @@
+{
+  "name": "架构图和PPT生成器",
+  "description": "An advanced AI-powered PPT and system architecture design platform powered by Gemini 3 Pro Image. Effortlessly generate professional slides and architectural diagrams from text descriptions or beautify existing designs.",
+  "requestFramePermissions": []
+}
